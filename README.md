@@ -1,4 +1,4 @@
-## 1.??paddlex
+## 1.安装paddlex
 
 
 ```python
@@ -6,11 +6,11 @@
 ```
 
 
-## 2.?????
+## 2.准备数据集
 
 
 ```python
-# ?????
+# 解压
 !unzip -oq /home/aistudio/data/data34213/insects.zip -d ~/insects
 ```
 
@@ -19,7 +19,7 @@
 %cd ~/insects/
 ```
 
-### ????????????
+### 建立图片与标签路径的连接
 
 
 ```python
@@ -30,7 +30,7 @@ train_list_path = '/home/aistudio/insects/data/insects/train_list.txt'
 val_list_path = '/home/aistudio/insects/data/insects/val_list.txt'
 label_list_path = '/home/aistudio/insects/data/insects/labels.txt'
 
-#???
+#训练集
 train_list = os.listdir('./data/insects/train/annotations/xmls')
 f = open(train_list_path,'a+')
 for filename in train_list:
@@ -41,7 +41,7 @@ for filename in train_list:
         f.write(image_path+' '+annotation_path+'\n')
 f.close()
 
-#???
+#验证集
 train_list = os.listdir('./data/insects/val/annotations/xmls')
 f = open(val_list_path,'a+')
 for filename in train_list:
@@ -52,7 +52,7 @@ for filename in train_list:
         f.write(image_path+' '+annotation_path+'\n')
 f.close()
 
-#??
+#标签
 with open(label_list_path,'w') as f:
     f.write('Boerner\n')
     f.write('Leconte\n')
@@ -63,22 +63,22 @@ with open(label_list_path,'w') as f:
     f.write('linnaeus')
 ```
 
-### ?????
+### 图像增强
 
 
 ```python
-# ??paddlex???GPU????????GPU???????CPU
+# 加载paddlex，设置GPU使用环境，如果非GPU环境会自动使用CPU
 import paddlex as pdx
 os.environ['CUDA_VISIBLE_DEVICE'] = '0'
 ```
 
 
-### ????
+### 图像增强
 
 
 ```python
-# ?????????transforms
-# API???https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/transforms/transforms.md
+# 定义训练和验证时的transforms
+# API说明：https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/transforms/transforms.md
 from paddlex import transforms as T
 train_transforms = T.Compose([
     T.MixupImage(mixup_epoch=-1), T.RandomDistort(),
@@ -97,12 +97,12 @@ eval_transforms = T.Compose([
 
 ```
 
-### ?????????VOC???
+### 将原始数据集转换为VOC数据集
 
 
 ```python
-# ?????????????
-# API???https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/datasets.md
+# 定义训练和验证所用的数据集
+# API说明：https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/datasets.md
 %cd /home/aistudio/insects/data/
 
 train_dataset = pdx.datasets.VOCDetection(
@@ -120,11 +120,11 @@ eval_dataset = pdx.datasets.VOCDetection(
     shuffle=False)
 ```
 
-### ????
+### 定义模型
 
 ```python
-# ???????????
-# ???VisualDL?????????https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/visualdl.md
+# 初始化模型，并进行训练
+# 可使用VisualDL查看训练指标，参考https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/visualdl.md
 num_classes = len(train_dataset.labels)
 model = pdx.det.PPYOLO(num_classes=num_classes, backbone='ResNet50_vd_dcn')
 ```
@@ -132,12 +132,12 @@ model = pdx.det.PPYOLO(num_classes=num_classes, backbone='ResNet50_vd_dcn')
 
 
 
-## 3.??
+## 3.训练
 
 
 ```python
-# API???https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/models/detection.md
-# ???????????https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/parameters.md
+# API说明：https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/apis/models/detection.md
+# 各参数介绍与调整说明：https://github.com/PaddlePaddle/PaddleX/blob/develop/docs/parameters.md
 model = pdx.load_model('output/ppyolo_r50vd_dcn/best_model')
 model.train(
     num_epochs=150,
@@ -154,7 +154,7 @@ model.train(
     use_vdl=True)
 ```
 
-> ???????????????????
+> 下面显示训练输出，供大家参考训练耗时
 
     2022-02-26 12:59:25 [INFO]	Model[PPYOLO] loaded.
     2022-02-26 12:59:25 [INFO]	Loading pretrained model from output/ppyolo_r50vd_dcn/pretrain/ppyolo_r50vd_dcn_2x_coco.pdparams
@@ -1090,33 +1090,33 @@ model.train(
     2022-02-26 20:17:10 [INFO]	[TRAIN] Epoch=40/150, Step=151/211, loss_xy=1.405825, loss_wh=1.668620, loss_iou=8.581761, loss_iou_aware=2.612576, loss_obj=3.593197, loss_cls=4.451023, loss=22.313002, lr=0.000417, time_each_step=2.8s, eta=18:12:10
 
 
-##4.??
+##4.评估
 
 
 ```python
-# ????
+# 模型加载
 %cd ~/insects/data/
 model_dir = 'output/ppyolo_r50vd_dcn/best_model'
 model = pdx.load_model(model_dir)
 ```
 
 ```python
-# ?????????
+# 在验证集上进行评估
 eval_result = model.evaluate(eval_dataset, batch_size=1, return_details=False)
 print('eval result:\n',eval_result)
 ```
 
-> ???????
+> 评估输出
 
     2022-02-26 20:41:30 [INFO]	Start to evaluate(total_samples=245, total_steps=245)...
     2022-02-26 20:41:45 [INFO]	Accumulating evaluatation results...
     eval result:
      OrderedDict([('bbox_map', 86.8117767200824)])
 
-## 5.??
+## 5.测试
 
 ```python
-# ??test?????????all_result?
+# 预测test数据集，结果保存到all_result中
 import cv2
 import os
 test_path = './insects/test/images/'
@@ -1127,7 +1127,7 @@ os.makedirs(save_path)
 font = cv2.FONT_HERSHEY_SIMPLEX
 def Picture_frame(image,box_list):
     for item in box_list:
-        # ????
+         # 接受阈值
         if(item['score']>0.4):
             x = int(item['bbox'][0])
             y = int(item['bbox'][1])
@@ -1146,7 +1146,7 @@ for frame in os.listdir(test_path):
     cv2.imwrite(os.path.join(save_path,frame),img)
 ```
 
-## 6.????
+## 6.成果展示
 
 
 ```python
